@@ -64,28 +64,16 @@ impl McpHandlers {
         let params = match params {
             Some(p) => p,
             None => {
-                return serde_json::to_value(json!({
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "error": {
-                        "code": -32602,
-                        "message": "Missing params"
-                    }
-                })).unwrap_or_else(|_| json!({}));
+                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Missing params"));
+                return serde_json::to_value(error_response).unwrap_or_else(|_| json!({}));
             }
         };
 
         let name = match params.get("name").and_then(|v| v.as_str()) {
             Some(n) => n,
             None => {
-                return serde_json::to_value(json!({
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "error": {
-                        "code": -32602,
-                        "message": "Missing tool name"
-                    }
-                })).unwrap_or_else(|_| json!({}));
+                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Missing tool name"));
+                return serde_json::to_value(error_response).unwrap_or_else(|_| json!({}));
             }
         };
 
@@ -107,14 +95,8 @@ impl McpHandlers {
                 serde_json::to_value(response).unwrap_or_else(|_| json!({}))
             }
             Err(e) => {
-                serde_json::to_value(json!({
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "error": {
-                        "code": -32603,
-                        "message": e.to_string()
-                    }
-                })).unwrap_or_else(|_| json!({}))
+                let error_response = McpResponse::<()>::error(id, McpError::internal_error(e.to_string()));
+                serde_json::to_value(error_response).unwrap_or_else(|_| json!({}))
             }
         }
     }
@@ -147,14 +129,8 @@ impl McpHandlers {
         let uri = match params.as_ref().and_then(|p| p.get("uri")).and_then(|v| v.as_str()) {
             Some(u) => u,
             None => {
-                return serde_json::to_value(json!({
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "error": {
-                        "code": -32602,
-                        "message": "Missing URI"
-                    }
-                })).unwrap_or_else(|_| json!({}));
+                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Missing URI"));
+                return serde_json::to_value(error_response).unwrap_or_else(|_| json!({}));
             }
         };
 
@@ -173,14 +149,8 @@ impl McpHandlers {
                 Self::get_time_formats_resource().to_string()
             }
             _ => {
-                return serde_json::to_value(json!({
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "error": {
-                        "code": -32602,
-                        "message": "Unknown resource"
-                    }
-                })).unwrap_or_else(|_| json!({}));
+                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Unknown resource"));
+                return serde_json::to_value(error_response).unwrap_or_else(|_| json!({}));
             }
         };
 
@@ -221,14 +191,8 @@ impl McpHandlers {
         let name = match params.as_ref().and_then(|p| p.get("name")).and_then(|v| v.as_str()) {
             Some(n) => n,
             None => {
-                return serde_json::to_value(json!({
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "error": {
-                        "code": -32602,
-                        "message": "Missing prompt name"
-                    }
-                })).unwrap_or_else(|_| json!({}));
+                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Missing prompt name"));
+                return serde_json::to_value(error_response).unwrap_or_else(|_| json!({}));
             }
         };
 
@@ -264,14 +228,8 @@ impl McpHandlers {
                 serde_json::to_value(response).unwrap_or_else(|_| json!({}))
             }
             _ => {
-                serde_json::to_value(json!({
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "error": {
-                        "code": -32602,
-                        "message": "Unknown prompt"
-                    }
-                })).unwrap_or_else(|_| json!({}))
+                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Unknown prompt"));
+                serde_json::to_value(error_response).unwrap_or_else(|_| json!({}))
             }
         }
     }

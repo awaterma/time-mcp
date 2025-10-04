@@ -62,7 +62,9 @@ pub type McpResult<T> = Result<T, McpError>;
 pub struct McpResponse<T> {
     pub jsonrpc: String,
     pub id: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<T>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<McpError>,
 }
 

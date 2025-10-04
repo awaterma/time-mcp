@@ -1,4 +1,5 @@
 use crate::handlers::mcp::McpHandlers;
+use crate::models::{McpResponse, McpError};
 use anyhow::Result;
 use serde_json::Value;
 use std::io::{self, BufRead, Write};
@@ -57,14 +58,10 @@ impl StdioHandler {
             "resources/read" => McpHandlers::handle_resources_read(id, params).await,
             "prompts/list" => McpHandlers::handle_prompts_list(id).await,
             "prompts/get" => McpHandlers::handle_prompts_get(id, params).await,
-            _ => serde_json::json!({
-                "jsonrpc": "2.0",
-                "id": id,
-                "error": {
-                    "code": -32601,
-                    "message": "Method not found"
-                }
-            })
+            _ => {
+                let error_response = McpResponse::<()>::error(id, McpError::method_not_found("Method not found"));
+                serde_json::to_value(error_response).unwrap_or_else(|_| serde_json::json!({}))
+            }
         }
     }
 }
