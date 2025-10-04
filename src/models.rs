@@ -1,7 +1,7 @@
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::SystemTime;
-use anyhow::Result;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TokenInfo {
@@ -36,15 +36,15 @@ impl McpError {
             message: message.into(),
         }
     }
-    
+
     pub fn invalid_params(message: impl Into<String>) -> Self {
         Self::new(-32602, message)
     }
-    
+
     pub fn method_not_found(message: impl Into<String>) -> Self {
         Self::new(-32601, message)
     }
-    
+
     pub fn internal_error(message: impl Into<String>) -> Self {
         Self::new(-32603, message)
     }
@@ -77,7 +77,7 @@ impl<T: Serialize> McpResponse<T> {
             error: None,
         }
     }
-    
+
     pub fn error(id: Value, error: McpError) -> McpResponse<()> {
         McpResponse {
             jsonrpc: "2.0".to_string(),

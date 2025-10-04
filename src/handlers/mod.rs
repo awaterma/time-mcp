@@ -1,3 +1,3 @@
 pub mod http;
-pub mod stdio;
 pub mod mcp;
+pub mod stdio;

@@ -1,6 +1,7 @@
 use anyhow::Result;
 
-pub const DEFAULT_PROTOCOL_VERSION: &str = "1.0";
+pub const DEFAULT_PROTOCOL_VERSION: &str = "2025-06-18";
+pub const FALLBACK_PROTOCOL_VERSION: &str = "1.0";
 pub const SERVER_NAME: &str = "time-mcp-server";
 pub const SERVER_VERSION: &str = "1.0.0";
 

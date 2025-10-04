@@ -1,6 +1,6 @@
 use serde_json::json;
-use std::process::{Command, Stdio};
 use std::io::Write;
+use std::process::{Command, Stdio};
 
 #[tokio::test]
 async fn test_stdio_get_current_time() {
@@ -21,13 +21,13 @@ async fn test_stdio_get_current_time() {
         },
         "id": 1
     });
-    
+
     writeln!(stdin, "{}", request).unwrap();
     stdin.flush().unwrap();
-    
+
     let output = child.wait_with_output().unwrap();
     let response: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-    
+
     assert_eq!(response["jsonrpc"], "2.0");
     assert_eq!(response["id"], 1);
     assert!(response["result"]["content"][0]["text"].is_string());
@@ -37,22 +37,31 @@ async fn test_stdio_get_current_time() {
 async fn test_stdio_all_tools() {
     let tools = [
         ("get_current_time", json!({"timezone": "UTC"})),
-        ("convert_timezone", json!({
-            "timestamp": "2025-08-17T10:30:00Z",
-            "from_timezone": "UTC", 
-            "to_timezone": "America/New_York"
-        })),
-        ("calculate_duration", json!({
-            "start_time": "2025-08-17T10:00:00Z",
-            "end_time": "2025-08-17T11:00:00Z",
-            "units": "hours"
-        })),
-        ("format_time", json!({
-            "timestamp": "2025-08-17T10:30:00Z",
-            "format": "iso8601"
-        })),
+        (
+            "convert_timezone",
+            json!({
+                "timestamp": "2025-08-17T10:30:00Z",
+                "from_timezone": "UTC",
+                "to_timezone": "America/New_York"
+            }),
+        ),
+        (
+            "calculate_duration",
+            json!({
+                "start_time": "2025-08-17T10:00:00Z",
+                "end_time": "2025-08-17T11:00:00Z",
+                "units": "hours"
+            }),
+        ),
+        (
+            "format_time",
+            json!({
+                "timestamp": "2025-08-17T10:30:00Z",
+                "format": "iso8601"
+            }),
+        ),
         ("get_timezone_info", json!({"timezone": "America/New_York"})),
-        ("list_timezones", json!({"region": "America"}))
+        ("list_timezones", json!({"region": "America"})),
     ];
 
     for (tool_name, args) in tools {
@@ -73,15 +82,19 @@ async fn test_stdio_all_tools() {
             },
             "id": 1
         });
-        
+
         writeln!(stdin, "{}", request).unwrap();
         stdin.flush().unwrap();
-        
+
         let output = child.wait_with_output().unwrap();
         let response: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-        
+
         assert_eq!(response["jsonrpc"], "2.0", "Tool {} failed", tool_name);
         assert_eq!(response["id"], 1);
-        assert!(response["result"]["content"][0]["text"].is_string(), "Tool {} response invalid", tool_name);
+        assert!(
+            response["result"]["content"][0]["text"].is_string(),
+            "Tool {} response invalid",
+            tool_name
+        );
     }
 }

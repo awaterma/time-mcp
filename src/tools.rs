@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{DateTime, Utc, TimeZone, Offset};
+use chrono::{DateTime, Offset, TimeZone, Utc};
 use chrono_tz::{Tz, TZ_VARIANTS};
 use serde_json::{json, Value};
 
@@ -7,16 +7,19 @@ pub struct TimeTools;
 
 impl TimeTools {
     pub async fn get_current_time(arguments: Value) -> Result<String> {
-        let timezone = arguments.get("timezone")
+        let timezone = arguments
+            .get("timezone")
             .and_then(|v| v.as_str())
             .unwrap_or("UTC");
-        let format = arguments.get("format")
+        let format = arguments
+            .get("format")
             .and_then(|v| v.as_str())
             .unwrap_or("iso");
 
-        let tz: Tz = timezone.parse()
+        let tz: Tz = timezone
+            .parse()
             .map_err(|_| anyhow::anyhow!("Invalid timezone: {}", timezone))?;
-        
+
         let now_utc = Utc::now();
         let now_tz = now_utc.with_timezone(&tz);
 
@@ -36,14 +39,17 @@ impl TimeTools {
                 "timezone": timezone
             }),
             "custom" => {
-                let custom_format = arguments.get("custom_format")
+                let custom_format = arguments
+                    .get("custom_format")
                     .and_then(|v| v.as_str())
-                    .ok_or_else(|| anyhow::anyhow!("custom_format required when format is 'custom'"))?;
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("custom_format required when format is 'custom'")
+                    })?;
                 json!({
                     "formatted": now_tz.format(custom_format).to_string(),
                     "timezone": timezone
                 })
-            },
+            }
             _ => return Err(anyhow::anyhow!("Invalid format: {}", format)),
         };
 
@@ -51,23 +57,27 @@ impl TimeTools {
     }
 
     pub async fn convert_timezone(arguments: Value) -> Result<String> {
-        let timestamp_str = arguments.get("timestamp")
+        let timestamp_str = arguments
+            .get("timestamp")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("timestamp required"))?;
-        let from_tz_str = arguments.get("from_timezone")
+        let from_tz_str = arguments
+            .get("from_timezone")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("from_timezone required"))?;
-        let to_tz_str = arguments.get("to_timezone")
+        let to_tz_str = arguments
+            .get("to_timezone")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("to_timezone required"))?;
 
-        let from_tz: Tz = from_tz_str.parse()
+        let from_tz: Tz = from_tz_str
+            .parse()
             .map_err(|_| anyhow::anyhow!("Invalid from_timezone: {}", from_tz_str))?;
-        let to_tz: Tz = to_tz_str.parse()
+        let to_tz: Tz = to_tz_str
+            .parse()
             .map_err(|_| anyhow::anyhow!("Invalid to_timezone: {}", to_tz_str))?;
 
-        let dt = Self::parse_timestamp(timestamp_str)?
-            .with_timezone(&from_tz);
+        let dt = Self::parse_timestamp(timestamp_str)?.with_timezone(&from_tz);
         let converted = dt.with_timezone(&to_tz);
 
         let result = json!({
@@ -85,22 +95,25 @@ impl TimeTools {
     }
 
     pub async fn calculate_duration(arguments: Value) -> Result<String> {
-        let start_str = arguments.get("start_time")
+        let start_str = arguments
+            .get("start_time")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("start_time required"))?;
-        let end_str = arguments.get("end_time")
+        let end_str = arguments
+            .get("end_time")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("end_time required"))?;
-        let units = arguments.get("units")
+        let units = arguments
+            .get("units")
             .and_then(|v| v.as_str())
             .unwrap_or("seconds");
 
         let start_dt = Self::parse_timestamp(start_str)?;
         let end_dt = Self::parse_timestamp(end_str)?;
-        
+
         let duration = end_dt.signed_duration_since(start_dt);
         let total_seconds = duration.num_seconds();
-        
+
         let result = match units {
             "seconds" => json!({
                 "duration": {
@@ -120,7 +133,7 @@ impl TimeTools {
                         "human_readable": format!("{} minutes", minutes)
                     }
                 })
-            },
+            }
             "hours" => {
                 let hours = total_seconds / 3600;
                 json!({
@@ -131,7 +144,7 @@ impl TimeTools {
                         "human_readable": format!("{} hours", hours)
                     }
                 })
-            },
+            }
             "days" => {
                 let days = total_seconds / (24 * 3600);
                 json!({
@@ -142,7 +155,7 @@ impl TimeTools {
                         "human_readable": format!("{} days", days)
                     }
                 })
-            },
+            }
             _ => return Err(anyhow::anyhow!("Invalid units: {}", units)),
         };
 
@@ -150,18 +163,22 @@ impl TimeTools {
     }
 
     pub async fn format_time(arguments: Value) -> Result<String> {
-        let timestamp_str = arguments.get("timestamp")
+        let timestamp_str = arguments
+            .get("timestamp")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("timestamp required"))?;
-        let format = arguments.get("format")
+        let format = arguments
+            .get("format")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("format required"))?;
-        let timezone_str = arguments.get("timezone")
+        let timezone_str = arguments
+            .get("timezone")
             .and_then(|v| v.as_str())
             .unwrap_or("UTC");
 
         let dt = Self::parse_timestamp(timestamp_str)?;
-        let tz: Tz = timezone_str.parse()
+        let tz: Tz = timezone_str
+            .parse()
             .map_err(|_| anyhow::anyhow!("Invalid timezone: {}", timezone_str))?;
         let dt_tz = dt.with_timezone(&tz);
 
@@ -175,14 +192,17 @@ impl TimeTools {
                 "timezone": timezone_str
             }),
             "custom" => {
-                let custom_format = arguments.get("custom_format")
+                let custom_format = arguments
+                    .get("custom_format")
                     .and_then(|v| v.as_str())
-                    .ok_or_else(|| anyhow::anyhow!("custom_format required when format is 'custom'"))?;
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("custom_format required when format is 'custom'")
+                    })?;
                 json!({
                     "formatted": dt_tz.format(custom_format).to_string(),
                     "timezone": timezone_str
                 })
-            },
+            }
             _ => return Err(anyhow::anyhow!("Invalid format: {}", format)),
         };
 
@@ -190,20 +210,26 @@ impl TimeTools {
     }
 
     pub async fn get_timezone_info(arguments: Value) -> Result<String> {
-        let timezone_str = arguments.get("timezone")
+        let timezone_str = arguments
+            .get("timezone")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("timezone required"))?;
 
-        let tz: Tz = timezone_str.parse()
+        let tz: Tz = timezone_str
+            .parse()
             .map_err(|_| anyhow::anyhow!("Invalid timezone: {}", timezone_str))?;
-        
+
         let now = Utc::now().with_timezone(&tz);
         let offset = now.offset();
-        
+
         let offset_seconds = offset.fix().local_minus_utc();
-        let dst_active = offset_seconds != tz.offset_from_utc_datetime(&now.naive_utc()).fix().local_minus_utc();
+        let dst_active = offset_seconds
+            != tz
+                .offset_from_utc_datetime(&now.naive_utc())
+                .fix()
+                .local_minus_utc();
         let abbreviation = format!("{}", now.format("%Z"));
-        
+
         let offset_hours = offset_seconds / 3600;
         let offset_minutes = (offset_seconds % 3600) / 60;
         let offset_str = format!("{:+03}:{:02}", offset_hours, offset_minutes.abs());
@@ -219,8 +245,7 @@ impl TimeTools {
     }
 
     pub async fn list_timezones(arguments: Value) -> Result<String> {
-        let region_filter = arguments.get("region")
-            .and_then(|v| v.as_str());
+        let region_filter = arguments.get("region").and_then(|v| v.as_str());
 
         let timezones: Vec<String> = TZ_VARIANTS
             .iter()

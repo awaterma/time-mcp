@@ -1,5 +1,5 @@
 use crate::{
-    config::{DEFAULT_PROTOCOL_VERSION, SERVER_NAME, SERVER_VERSION},
+    config::{DEFAULT_PROTOCOL_VERSION, FALLBACK_PROTOCOL_VERSION, SERVER_NAME, SERVER_VERSION},
     models::{McpError, McpResponse},
     tools::TimeTools,
 };
@@ -10,8 +10,18 @@ use serde_json::{json, Value};
 pub struct McpHandlers;
 
 impl McpHandlers {
-    pub async fn handle_initialize(id: Value, _params: Option<Value>) -> Value {
-        let protocol_version = DEFAULT_PROTOCOL_VERSION;
+    pub async fn handle_initialize(id: Value, params: Option<Value>) -> Value {
+        let client_version = params
+            .as_ref()
+            .and_then(|p| p.get("protocolVersion"))
+            .and_then(|v| v.as_str())
+            .unwrap_or(DEFAULT_PROTOCOL_VERSION);
+
+        let protocol_version = if client_version == FALLBACK_PROTOCOL_VERSION {
+            FALLBACK_PROTOCOL_VERSION
+        } else {
+            DEFAULT_PROTOCOL_VERSION
+        };
 
         let response = McpResponse::success(
             id,

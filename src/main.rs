@@ -7,13 +7,14 @@ mod tools;
 use anyhow::Result;
 use clap::{Arg, Command};
 use config::{ServerConfig, TransportType};
-use handlers::{stdio::StdioHandler, http::HttpHandler};
+use handlers::{http::HttpHandler, stdio::StdioHandler};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_writer(std::io::stderr)
         .with_ansi(false)
+        .with_max_level(tracing::Level::INFO)
         .init();
 
     let matches = Command::new("time-mcp-server")
@@ -25,21 +26,21 @@ async fn main() -> Result<()> {
                 .value_name("TYPE")
                 .help("Transport type: stdio or http")
                 .default_value("stdio")
-                .value_parser(["stdio", "http"])
+                .value_parser(["stdio", "http"]),
         )
         .arg(
             Arg::new("host")
                 .long("host")
                 .value_name("HOST")
                 .help("Host to bind HTTP server to")
-                .default_value("localhost")
+                .default_value("localhost"),
         )
         .arg(
             Arg::new("port")
                 .long("port")
                 .value_name("PORT")
                 .help("Port to bind HTTP server to")
-                .default_value("8080")
+                .default_value("8080"),
         )
         .get_matches();
 
@@ -51,7 +52,11 @@ async fn main() -> Result<()> {
             StdioHandler::run().await
         }
         TransportType::Http { host, port } => {
-            tracing::info!("Starting Time MCP Server with HTTP transport on {}:{}", host, port);
+            tracing::info!(
+                "Starting Time MCP Server with HTTP transport on {}:{}",
+                host,
+                port
+            );
             HttpHandler::new(config).run(&host, port).await
         }
     }
