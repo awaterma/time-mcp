@@ -1,6 +1,6 @@
 use crate::{
     auth::AuthManager,
-    config::{ServerConfig, SERVER_NAME, SERVER_VERSION, DEFAULT_PROTOCOL_VERSION},
+    config::{ServerConfig, DEFAULT_PROTOCOL_VERSION, SERVER_NAME, SERVER_VERSION},
     models::McpRequest,
     tools::TimeTools,
 };
@@ -31,6 +31,7 @@ impl HttpHandler {
 
     pub async fn run(self, host: &str, port: u16) -> Result<()> {
         let app = Router::new()
+            .route("/", get(Self::health_check))
             .route("/mcp/capabilities", get(Self::get_capabilities))
             .route("/mcp/tools/call", post(Self::call_tool))
             .route("/mcp/resources/read", post(Self::read_resource))
@@ -42,7 +43,7 @@ impl HttpHandler {
 
         let addr = format!("{}:{}", host, port);
         let listener = tokio::net::TcpListener::bind(&addr).await?;
-        
+
         tracing::info!("HTTP server listening on {}", addr);
         axum::serve(listener, app).await?;
 
@@ -59,11 +60,14 @@ impl HttpHandler {
 
     async fn get_capabilities(
         State(handler): State<HttpHandler>,
-        headers: HeaderMap
+        headers: HeaderMap,
     ) -> Result<Json<Value>, StatusCode> {
-        handler.auth.authenticate(&headers).await
+        handler
+            .auth
+            .authenticate(&headers)
+            .await
             .map_err(StatusCode::from)?;
-        
+
         Ok(Json(json!({
             "protocolVersion": DEFAULT_PROTOCOL_VERSION,
             "capabilities": {
@@ -88,9 +92,12 @@ impl HttpHandler {
     async fn call_tool(
         State(handler): State<HttpHandler>,
         headers: HeaderMap,
-        Json(request): Json<McpRequest>
+        Json(request): Json<McpRequest>,
     ) -> Result<Json<Value>, StatusCode> {
-        handler.auth.authenticate(&headers).await
+        handler
+            .auth
+            .authenticate(&headers)
+            .await
             .map_err(StatusCode::from)?;
 
         let tool_name = request.name.ok_or(StatusCode::BAD_REQUEST)?;
@@ -115,27 +122,27 @@ impl HttpHandler {
     async fn read_resource(
         State(handler): State<HttpHandler>,
         headers: HeaderMap,
-        Json(request): Json<McpRequest>
+        Json(request): Json<McpRequest>,
     ) -> Result<Json<Value>, StatusCode> {
-        handler.auth.authenticate(&headers).await
+        handler
+            .auth
+            .authenticate(&headers)
+            .await
             .map_err(StatusCode::from)?;
 
         let uri = request.uri.ok_or(StatusCode::BAD_REQUEST)?;
 
         let content = match uri.as_str() {
             "timezone_database" => {
-                let timezones: Vec<String> = TZ_VARIANTS
-                    .iter()
-                    .map(|tz| tz.name().to_string())
-                    .collect();
+                let timezones: Vec<String> =
+                    TZ_VARIANTS.iter().map(|tz| tz.name().to_string()).collect();
                 json!({
                     "timezones": timezones,
                     "total_count": timezones.len()
-                }).to_string()
+                })
+                .to_string()
             }
-            "time_formats" => {
-                Self::get_time_formats_resource().to_string()
-            }
+            "time_formats" => Self::get_time_formats_resource().to_string(),
             _ => return Err(StatusCode::NOT_FOUND),
         };
 
@@ -151,23 +158,27 @@ impl HttpHandler {
     async fn get_prompt(
         State(handler): State<HttpHandler>,
         headers: HeaderMap,
-        Json(request): Json<McpRequest>
+        Json(request): Json<McpRequest>,
     ) -> Result<Json<Value>, StatusCode> {
-        handler.auth.authenticate(&headers).await
+        handler
+            .auth
+            .authenticate(&headers)
+            .await
             .map_err(StatusCode::from)?;
 
         let prompt_name = request.name.ok_or(StatusCode::BAD_REQUEST)?;
 
         match prompt_name.as_str() {
             "time_query_assistant" => {
-                let user_query = request.arguments
+                let user_query = request
+                    .arguments
                     .as_ref()
                     .and_then(|args| args.get("user_query"))
                     .and_then(|v| v.as_str())
                     .unwrap_or("general time query");
 
                 let current_time = Utc::now();
-                
+
                 Ok(Json(json!({
                     "description": "Assistant for time-related queries",
                     "messages": [{

@@ -31,3 +31,16 @@ tokio-test = "0.4"
 mockito = "1.2"
 assert-json-diff = "2.0"
 tempfile = "3.8"
+reqwest = { version = "0.11", features = ["json"] }
+
+[[test]]
+name = "unit_tests"
+path = "tests/unit_tests.rs"
+
+[[test]]
+name = "http_integration_tests"
+path = "tests/http_integration_tests.rs"
+
+[[test]]
+name = "main_integration_tests"
+path = "tests/main_integration_tests.rs"

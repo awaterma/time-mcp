@@ -1,6 +1,6 @@
 use crate::{
-    config::{DEFAULT_PROTOCOL_VERSION, FALLBACK_PROTOCOL_VERSION, SERVER_NAME, SERVER_VERSION},
-    models::{McpResponse, McpError},
+    config::{DEFAULT_PROTOCOL_VERSION, SERVER_NAME, SERVER_VERSION},
+    models::{McpError, McpResponse},
     tools::TimeTools,
 };
 use chrono::Utc;
@@ -10,18 +10,8 @@ use serde_json::{json, Value};
 pub struct McpHandlers;
 
 impl McpHandlers {
-    pub async fn handle_initialize(id: Value, params: Option<Value>) -> Value {
-        let client_version = params
-            .as_ref()
-            .and_then(|p| p.get("protocolVersion"))
-            .and_then(|v| v.as_str())
-            .unwrap_or(DEFAULT_PROTOCOL_VERSION);
-
-        let protocol_version = if client_version == FALLBACK_PROTOCOL_VERSION {
-            FALLBACK_PROTOCOL_VERSION
-        } else {
-            DEFAULT_PROTOCOL_VERSION
-        };
+    pub async fn handle_initialize(id: Value, _params: Option<Value>) -> Value {
+        let protocol_version = DEFAULT_PROTOCOL_VERSION;
 
         let response = McpResponse::success(
             id,
@@ -43,7 +33,7 @@ impl McpHandlers {
                     "name": SERVER_NAME,
                     "version": SERVER_VERSION
                 }
-            })
+            }),
         );
 
         serde_json::to_value(response).unwrap_or_else(|_| json!({}))
@@ -54,7 +44,7 @@ impl McpHandlers {
             id,
             json!({
                 "tools": Self::get_tool_definitions()
-            })
+            }),
         );
 
         serde_json::to_value(response).unwrap_or_else(|_| json!({}))
@@ -64,7 +54,8 @@ impl McpHandlers {
         let params = match params {
             Some(p) => p,
             None => {
-                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Missing params"));
+                let error_response =
+                    McpResponse::<()>::error(id, McpError::invalid_params("Missing params"));
                 return serde_json::to_value(error_response).unwrap_or_else(|_| json!({}));
             }
         };
@@ -72,7 +63,8 @@ impl McpHandlers {
         let name = match params.get("name").and_then(|v| v.as_str()) {
             Some(n) => n,
             None => {
-                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Missing tool name"));
+                let error_response =
+                    McpResponse::<()>::error(id, McpError::invalid_params("Missing tool name"));
                 return serde_json::to_value(error_response).unwrap_or_else(|_| json!({}));
             }
         };
@@ -90,12 +82,13 @@ impl McpHandlers {
                             "type": "text",
                             "text": content
                         }]
-                    })
+                    }),
                 );
                 serde_json::to_value(response).unwrap_or_else(|_| json!({}))
             }
             Err(e) => {
-                let error_response = McpResponse::<()>::error(id, McpError::internal_error(e.to_string()));
+                let error_response =
+                    McpResponse::<()>::error(id, McpError::internal_error(e.to_string()));
                 serde_json::to_value(error_response).unwrap_or_else(|_| json!({}))
             }
         }
@@ -119,37 +112,40 @@ impl McpHandlers {
                         "mimeType": "application/json"
                     }
                 ]
-            })
+            }),
         );
 
         serde_json::to_value(response).unwrap_or_else(|_| json!({}))
     }
 
     pub async fn handle_resources_read(id: Value, params: Option<Value>) -> Value {
-        let uri = match params.as_ref().and_then(|p| p.get("uri")).and_then(|v| v.as_str()) {
+        let uri = match params
+            .as_ref()
+            .and_then(|p| p.get("uri"))
+            .and_then(|v| v.as_str())
+        {
             Some(u) => u,
             None => {
-                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Missing URI"));
+                let error_response =
+                    McpResponse::<()>::error(id, McpError::invalid_params("Missing URI"));
                 return serde_json::to_value(error_response).unwrap_or_else(|_| json!({}));
             }
         };
 
         let content = match uri {
             "timezone_database" => {
-                let timezones: Vec<String> = TZ_VARIANTS
-                    .iter()
-                    .map(|tz| tz.name().to_string())
-                    .collect();
+                let timezones: Vec<String> =
+                    TZ_VARIANTS.iter().map(|tz| tz.name().to_string()).collect();
                 json!({
                     "timezones": timezones,
                     "total_count": timezones.len()
-                }).to_string()
+                })
+                .to_string()
             }
-            "time_formats" => {
-                Self::get_time_formats_resource().to_string()
-            }
+            "time_formats" => Self::get_time_formats_resource().to_string(),
             _ => {
-                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Unknown resource"));
+                let error_response =
+                    McpResponse::<()>::error(id, McpError::invalid_params("Unknown resource"));
                 return serde_json::to_value(error_response).unwrap_or_else(|_| json!({}));
             }
         };
@@ -162,7 +158,7 @@ impl McpHandlers {
                     "mimeType": "application/json",
                     "text": content
                 }]
-            })
+            }),
         );
 
         serde_json::to_value(response).unwrap_or_else(|_| json!({}))
@@ -181,17 +177,22 @@ impl McpHandlers {
                         "required": true
                     }]
                 }]
-            })
+            }),
         );
 
         serde_json::to_value(response).unwrap_or_else(|_| json!({}))
     }
 
     pub async fn handle_prompts_get(id: Value, params: Option<Value>) -> Value {
-        let name = match params.as_ref().and_then(|p| p.get("name")).and_then(|v| v.as_str()) {
+        let name = match params
+            .as_ref()
+            .and_then(|p| p.get("name"))
+            .and_then(|v| v.as_str())
+        {
             Some(n) => n,
             None => {
-                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Missing prompt name"));
+                let error_response =
+                    McpResponse::<()>::error(id, McpError::invalid_params("Missing prompt name"));
                 return serde_json::to_value(error_response).unwrap_or_else(|_| json!({}));
             }
         };
@@ -206,7 +207,7 @@ impl McpHandlers {
                     .unwrap_or("general time query");
 
                 let current_time = Utc::now();
-                
+
                 let response = McpResponse::success(
                     id,
                     json!({
@@ -222,13 +223,14 @@ impl McpHandlers {
                                 )
                             }
                         }]
-                    })
+                    }),
                 );
 
                 serde_json::to_value(response).unwrap_or_else(|_| json!({}))
             }
             _ => {
-                let error_response = McpResponse::<()>::error(id, McpError::invalid_params("Unknown prompt"));
+                let error_response =
+                    McpResponse::<()>::error(id, McpError::invalid_params("Unknown prompt"));
                 serde_json::to_value(error_response).unwrap_or_else(|_| json!({}))
             }
         }
