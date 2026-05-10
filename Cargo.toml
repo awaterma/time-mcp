@@ -3,7 +3,7 @@ name = "time-mcp-server"
 version = "1.0.0"
 edition = "2021"
 description = "Model Context Protocol server providing time-related functionality"
-license = "MIT"
+license = "AGPL-3.0"
 authors = []
 
 [[bin]]
