@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{DateTime, Offset, TimeZone, Utc};
+use chrono::{Datelike, DateTime, Offset, TimeZone, Utc};
 use chrono_tz::{Tz, TZ_VARIANTS};
 use serde_json::{json, Value};
 
@@ -223,11 +223,14 @@ impl TimeTools {
         let offset = now.offset();
 
         let offset_seconds = offset.fix().local_minus_utc();
-        let dst_active = offset_seconds
-            != tz
-                .offset_from_utc_datetime(&now.naive_utc())
-                .fix()
-                .local_minus_utc();
+        let jan1 = chrono::NaiveDate::from_ymd_opt(now.year(), 1, 1)
+            .and_then(|d| d.and_hms_opt(12, 0, 0))
+            .ok_or_else(|| anyhow::anyhow!("failed to construct Jan 1 reference date"))?;
+        let standard_offset = tz
+            .offset_from_utc_datetime(&jan1)
+            .fix()
+            .local_minus_utc();
+        let dst_active = offset_seconds != standard_offset;
         let abbreviation = format!("{}", now.format("%Z"));
 
         let offset_hours = offset_seconds / 3600;
