@@ -3,3 +3,9 @@ target
 rust-patterns-guide.md
 coverage
 target
+# phronesis: ignore local runtime state (logs, rules.json, confidence/
+# bugs/journey), but track the wiki/ tree — ADR decision pages are
+# durable project knowledge that should travel with the repo.
+.phronesis/*
+!.phronesis/wiki/
+!.phronesis/wiki/**
