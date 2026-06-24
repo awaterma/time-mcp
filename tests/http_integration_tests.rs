@@ -80,7 +80,7 @@ async fn test_http_get_capabilities() {
 
     assert_eq!(res.status(), reqwest::StatusCode::OK);
     let body: serde_json::Value = res.json().await.expect("Failed to parse json");
-    assert_eq!(body["protocolVersion"], "1.0");
+    assert_eq!(body["protocolVersion"], "2025-06-18");
 }
 
 #[tokio::test]
